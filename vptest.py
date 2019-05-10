@@ -41,15 +41,14 @@ def vptest_ints(nsamples, dim, nqueries, lb = 0, ub = 100, verbose = False):
 		assert vp_dist == baseline_dist, err
 
 	vpm, baselinem = np.average(vp_qtimes), np.average(baseline_qtimes)
-	if verbose:
-		print("Passed all tests!")
-		print("Mean query time for VP: {:f}".format(vpm))
-		print("Mean query time for baseline: {:f}".format(baselinem))
-	return vmp, baselinem
+	print("Passed all tests!")
+	print("Mean query time for VP: {:f}".format(vpm))
+	print("Mean query time for baseline: {:f}".format(baselinem))
+	return vpm, baselinem
 
 if __name__ == "__main__":
 	vptest_ints(
-			nsamples = 1000, 
+			nsamples = 1000000, 
 			dim = 10, 
 			nqueries = 50
 		)	
