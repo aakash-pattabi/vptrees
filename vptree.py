@@ -85,8 +85,8 @@ class VPTree(object):
 		if node is None:
 			return 
 		print(indent + "Vantage: " + (str(self.data[node.vantage])))
-		mu = 0 if node.mu is None else node.mu
-		print(indent + "Mu: {:f}".format(mu))
+		muform = "{:f}" if node.mu else "{}"
+		print(indent + "Mu: " + muform.format(node.mu))
 		print(indent + "Indices: {}".format(str(node.indices)))
 		if node.right:	print(indent + "Right ->")
 		self._print_node(node.right, indent + "\t")
@@ -106,9 +106,9 @@ class VPTree(object):
 				if d >= float(cur.mu/2) and cur.right:							# q is closer to the boundary of the separating sphere than 
 					candidates.append(self.query(q, start = cur.right))			# to the vantage-point itself
 				cur = cur.left
-			else:																# Go right; search left-child in addition if query 
-				if (d - cur.mu) < cur.mu and cur.left:							# q is closer to the boundary of the separating sphere again
-					candidates.append(self.query(q, start = cur.left))
+			else:
+				dtoright = self.distfunc(q, self.data[cur.right.vantage])		# Go right; search the left-child in addition if query
+				if (d - cur.mu) < dtoright and cur.left:						# is closer to the boundary of the sphere than to its "new" 
+					candidates.append(self.query(q, start = cur.left))			# right vantage
 				cur = cur.right
-		print(candidates)
 		return LinearScan(candidates, self.distfunc).query(q)
