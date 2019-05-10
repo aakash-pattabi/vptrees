@@ -2,11 +2,11 @@
 from statistics import median
 
 class Node(object):
-	def __init__(self, vantage, mu):
-		self.vantage = vantage
-		self.mu = mu
-		self.indices
-		self.parent = None
+	def __init__(self, indices, parent):
+		self.indices = indices
+		self.parent = parent
+		self.vantage = None
+		self.mu = None
 		self.left = None
 		self.right = None
 		
@@ -39,14 +39,14 @@ class VPTree(object):
 	def _construct_tree(self, node):
 		# If the parent node is (already) a leaf
 		if len(node.indices) == 1:
-			node.vantage = 
+			node.vantage = node.indices[0]
 			return
 
-		node.vantage = vpfunc(node.indices)
+		node.vantage = self.vpfunc(node.indices)
 		distances = [self.distfunc(node.vantage, self.data[i]) for i in node.indices]
 		node.mu = median(distances)
-		left = [i for i in indices if distances[i] < node.mu]
-		right = list(set(indices) - set(left))
+		left = [i for i in node.indices if distances[i] < node.mu]
+		right = list(set(node.indices) - set(left))
 
 		node.left = Node(
 				indices = left, 
@@ -70,3 +70,27 @@ class VPTree(object):
 			else:										# Go right
 				cur = cur.right
 		return q
+
+'''
+--------------------
+Class: LinearScan
+Implements a baseline "memorization database" that allows NN queries in
+linear time using a linear search over database entries. 
+-------------------- 
+
+N/A. 
+'''
+class LinearScan(object):
+	def __init__(self, data, distfunc):
+		self.data = data
+		self.distfunc = distfunc
+	
+	def query(self, q):
+		min_so_far = self.data[0]
+		dist_so_far = self.distfunc(q, min_so_far)
+		for element in self.data:
+			dist = self.distfunc(q, element)
+			if dist < dist_so_far:
+				min_so_far = element
+				dist_so_far = dist
+		return min_so_far
