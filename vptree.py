@@ -1,75 +1,4 @@
-
 from statistics import median
-
-class Node(object):
-	def __init__(self, indices, parent):
-		self.indices = indices
-		self.parent = parent
-		self.vantage = None
-		self.mu = None
-		self.left = None
-		self.right = None
-		
-'''
---------------------
-Class: VPTree
-Implements the simplest possible vantage point tree for 1-NN search. 
---------------------
-
-Importantly, let [vpfunc], the argument that selects a vantage point
-from the data space to attach to a node, and [indices], the data in each 
-node, be defined over the _indices_ of the [data] field in the VPTree. 
-Likewise, let [vantage], the vantage point in the node, be defined as an index 
-into [self.data]. 
-
-The [Node] class as defined above includes a [parent] pointer, but it 
-may be unnecessary. Can delete later if we don't need it to revise the tree. 
-'''
-class VPTree(object):
-	def __init__(self, data, distfunc, vpfunc):
-		self.data = data
-		self.root = Node(
-				indices = range(len(self.data)), 
-				parent = None
-			)
-		self.distfunc = distfunc
-		self.vpfunc = vpfunc
-		self._construct_tree(self.root)
-
-	def _construct_tree(self, node):
-		# If the parent node is (already) a leaf
-		if len(node.indices) == 1:
-			node.vantage = node.indices[0]
-			return
-
-		node.vantage = self.vpfunc(node.indices)
-		distances = [self.distfunc(node.vantage, self.data[i]) for i in node.indices]
-		node.mu = median(distances)
-		left = [i for i in node.indices if distances[i] < node.mu]
-		right = list(set(node.indices) - set(left))
-
-		node.left = Node(
-				indices = left, 
-				parent = node
-			)
-
-		node.right = Node(
-				indices = right, 
-				parent = node
-			)
-
-	def query(self, q):
-		cur = self.root
-		while (q != self.data[cur.vantage]):
-			# If the current node is (already) a leaf
-			candidate = self.data[cur.vantage]
-			if (len(cur.indices) == 1):
-				return candidate
-			if (self.distfunc(candidate, q) < cur.mu):	# Go left
-				cur = cur.left
-			else:										# Go right
-				cur = cur.right
-		return q
 
 '''
 --------------------
@@ -94,3 +23,92 @@ class LinearScan(object):
 				min_so_far = element
 				dist_so_far = dist
 		return min_so_far
+
+'''
+--------------------
+Class: Node, VPTree
+Implements the simplest possible vantage point tree for 1-NN search. 
+--------------------
+
+Importantly, let [vpfunc], the argument that selects a vantage point
+from the data space to attach to a node, and [indices], the data in each 
+node, be defined over the _indices_ of the [data] field in the VPTree. 
+Likewise, let [vantage], the vantage point in the node, be defined as an index 
+into [self.data].  
+'''
+
+class Node(object):
+	def __init__(self, indices, parent):
+		self.indices = indices
+		self.parent = parent
+		self.vantage = None
+		self.mu = None
+		self.left = None
+		self.right = None
+
+class VPTree(object):
+	def __init__(self, data, distfunc, vpfunc):
+		self.data = data
+		self.root = Node(
+				indices = list(range(len(self.data))), 
+				parent = None
+			)
+		self.distfunc = distfunc
+		self.vpfunc = vpfunc
+		self._construct_tree(self.root)
+
+	def _construct_tree(self, node):
+		# The node is a leaf node (no candidate children)
+		if len(node.indices) == 1:
+			node.vantage = node.indices[0]
+			return
+
+		node.vantage = self.vpfunc(node.indices)
+		node.indices.remove(node.vantage)
+		distances = [self.distfunc(self.data[node.vantage], self.data[i]) for i in node.indices]
+		node.mu = median(distances)
+		left = [node.indices[i] for i in range(len(distances)) if distances[i] < node.mu]
+		right = list(set(node.indices) - set(left))
+
+		if left:
+			node.left = Node(indices = left, parent = node)
+			self._construct_tree(node.left)
+
+		if right:
+			node.right = Node(indices = right, parent = node)
+			self._construct_tree(node.right)
+
+	def print_tree(self):
+		self._print_node(self.root, "")
+
+	def _print_node(self, node, indent):
+		if node is None:
+			return 
+		print(indent + "Vantage: " + (str(self.data[node.vantage])))
+		mu = 0 if node.mu is None else node.mu
+		print(indent + "Mu: {:f}".format(mu))
+		print(indent + "Indices: {}".format(str(node.indices)))
+		if node.right:	print(indent + "Right ->")
+		self._print_node(node.right, indent + "\t")
+		if node.left:	print(indent + "Left ->")
+		self._print_node(node.left, indent + "\t")
+
+	def query(self, q, start = None):
+		cur = start if start else self.root
+		candidates = []
+		while (cur is not None):
+			cand = self.data[cur.vantage]
+			candidates.append(cand)
+			d = self.distfunc(cand, q)
+			if cur.mu is None:
+				cur = None
+			elif d < cur.mu:													# Go left; search right-child in addition if query
+				if d >= float(cur.mu/2) and cur.right:							# q is closer to the boundary of the separating sphere than 
+					candidates.append(self.query(q, start = cur.right))			# to the vantage-point itself
+				cur = cur.left
+			else:																# Go right; search left-child in addition if query 
+				if (d - cur.mu) < cur.mu and cur.left:							# q is closer to the boundary of the separating sphere again
+					candidates.append(self.query(q, start = cur.left))
+				cur = cur.right
+		print(candidates)
+		return LinearScan(candidates, self.distfunc).query(q)
