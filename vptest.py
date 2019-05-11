@@ -19,14 +19,15 @@ def vptest_ints(nsamples, dim, nqueries, lb = 0, ub = 100, verbose = False):
 
 	if verbose:	tree.print_tree()
 
-	vp_qtimes, baseline_qtimes = [], []
+	vp_qtimes, vp_vis, baseline_qtimes = [], [], []
 	for test in range(nqueries):
 		q = np.random.randint(lb, ub, dim)
 
 		tic = time.time()
-		vp_soln = tree.query(q)
+		vp_soln, nvis = tree.query(q)
 		toc = time.time()
 		vp_qtimes.append(toc - tic)
+		vp_vis.append(nvis)
 
 		tic = time.time()
 		baseline_soln = baseline.query(q)
@@ -40,15 +41,17 @@ def vptest_ints(nsamples, dim, nqueries, lb = 0, ub = 100, verbose = False):
 		err += "Scan solution " + str(baseline_soln) + " at distance {:f}".format(baseline_dist)
 		assert vp_dist == baseline_dist, err
 
-	vpm, baselinem = np.average(vp_qtimes), np.average(baseline_qtimes)
+	vpm, baselinem, vpvisits = np.average(vp_qtimes), np.average(baseline_qtimes), np.average(vp_vis)
 	print("Passed all tests!")
 	print("Mean query time for VP: {:f}".format(vpm))
+	print("Mean search visits for VP: {:f}".format(vpvisits))
 	print("Mean query time for baseline: {:f}".format(baselinem))
 	return vpm, baselinem
 
 if __name__ == "__main__":
 	vptest_ints(
-			nsamples = 1000000, 
-			dim = 10, 
-			nqueries = 50
+			nsamples = 1000, 
+			dim = 3, 
+			nqueries = 50, 
+			verbose = False
 		)	

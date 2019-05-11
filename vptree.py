@@ -79,6 +79,7 @@ class VPTree(object):
 			self._construct_tree(node.right)
 
 	def print_tree(self):
+		print("\n")
 		self._print_node(self.root, "")
 
 	def _print_node(self, node, indent):
@@ -95,6 +96,7 @@ class VPTree(object):
 
 	def query(self, q, start = None):
 		cur = start if start else self.root
+		visited = 1
 		candidates = []
 		while (cur is not None):
 			cand = self.data[cur.vantage]
@@ -103,12 +105,16 @@ class VPTree(object):
 			if cur.mu is None:
 				cur = None
 			elif d < cur.mu:													# Go left; search right-child in addition if query
-				if d >= float(cur.mu/2) and cur.right:							# q is closer to the boundary of the separating sphere than 
-					candidates.append(self.query(q, start = cur.right))			# to the vantage-point itself
+				if d >= float(cur.mu/2) and cur.right:
+					rnn, vis = self.query(q, start = cur.right)					# q is closer to the boundary of the separating sphere than 
+					candidates.append(rnn)										# to the vantage-point itself
+					visited += vis
 				cur = cur.left
 			else:
 				dtoright = self.distfunc(q, self.data[cur.right.vantage])		# Go right; search the left-child in addition if query
 				if (d - cur.mu) < dtoright and cur.left:						# is closer to the boundary of the sphere than to its "new" 
-					candidates.append(self.query(q, start = cur.left))			# right vantage
+					lnn, vis = self.query(q, start = cur.left)					# right vantage
+					candidates.append(lnn)			
+					visited += vis
 				cur = cur.right
-		return LinearScan(candidates, self.distfunc).query(q)
+		return LinearScan(candidates, self.distfunc).query(q), visited
