@@ -1,4 +1,5 @@
 from statistics import median
+from queue import PriorityQueue
 
 '''
 --------------------
@@ -36,7 +37,6 @@ node, be defined over the _indices_ of the [data] field in the VPTree.
 Likewise, let [vantage], the vantage point in the node, be defined as an index 
 into [self.data].  
 '''
-
 class Node(object):
 	def __init__(self, indices, parent):
 		self.indices = indices
@@ -94,27 +94,34 @@ class VPTree(object):
 		if node.left:	print(indent + "Left ->")
 		self._print_node(node.left, indent + "\t")
 
-	def query(self, q, start = None):
-		cur = start if start else self.root
-		visited = 1
-		candidates = []
-		while (cur is not None):
-			cand = self.data[cur.vantage]
-			candidates.append(cand)
-			d = self.distfunc(cand, q)
-			if cur.mu is None:
-				cur = None
-			elif d < cur.mu:													# Go left; search right-child in addition if query
-				if d >= float(cur.mu/2) and cur.right:
-					rnn, vis = self.query(q, start = cur.right)					# q is closer to the boundary of the separating sphere than 
-					candidates.append(rnn)										# to the vantage-point itself
-					visited += vis
-				cur = cur.left
-			else:
-				dtoright = self.distfunc(q, self.data[cur.right.vantage])		# Go right; search the left-child in addition if query
-				if (d - cur.mu) < dtoright and cur.left:						# is closer to the boundary of the sphere than to its "new" 
-					lnn, vis = self.query(q, start = cur.left)					# right vantage
-					candidates.append(lnn)			
-					visited += vis
-				cur = cur.right
-		return LinearScan(candidates, self.distfunc).query(q), visited
+	'''
+	Var. [tau] tracks the _distance of the farthest nearest neighbor_ 
+	we've encountered in the search so far (trivial for k = 1). 
+
+	Var. [nvis] tracks by reference the number of node "visits" made in a search
+	(e.g. the number of comparisons). (Note, [nvis] must be a list for updates)
+	by reference to work. 
+	'''
+	def query(self, q, nvis = False):
+		assert(nvis == [1] or nvis is False)
+		tau = float("inf")
+		to_search = [self.root]
+		nn = self.root.vantage
+		while to_search:
+			cur = to_search.pop(0)
+			d = self.distfunc(q, self.data[cur.vantage])
+
+			if d < tau:								# Node's vantage point is the closest to q
+				tau = d 							# seen so far ==> increment [tau] and reassign
+				nn = cur 							# the running nearest neigbor
+
+			if cur.mu:								# If not a leaf node
+				if cur.left and tau > d - cur.mu:
+					to_search.append(cur.left)
+					if nvis:	nvis[0] += 1
+
+				if cur.right and tau >= cur.mu - d:
+					to_search.append(cur.right)
+					if nvis:	nvis[0] += 1
+
+		return self.data[nn.vantage]
