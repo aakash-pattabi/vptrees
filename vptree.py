@@ -25,6 +25,11 @@ class LinearScan(object):
 				dist_so_far = dist
 		return min_so_far
 
+	def get_rank_of(self, q, v):
+		dists = [self.distfunc(q, x) for x in self.data]
+		ranked = [x for __,x in sorted(zip(dists, self.data))]
+		return ranked.index(v)
+
 '''
 --------------------
 Class: Node, VPTree
