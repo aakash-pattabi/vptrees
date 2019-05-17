@@ -1,5 +1,6 @@
 from statistics import median
 from queue import PriorityQueue
+import matplotlib.pyplot as plt
 
 '''
 --------------------
@@ -82,6 +83,45 @@ class VPTree(object):
 		if right:
 			node.right = Node(indices = right, parent = node)
 			self._construct_tree(node.right)
+
+	'''
+	def draw_tree(self, default_linewidth = 2, decay = 0.9):
+		assert len(self.data[0]) == 2
+		min_x, max_x, min_y, max_y = 0, 0, 0, 0
+		fig, ax = plt.subplots()
+		to_draw = [self.root]
+		elem = 0
+		while elem < len(self.data):
+			cur = to_draw[elem]
+			if cur.left:	to_draw.append(cur.left)
+			if cur.right:	to_draw.append(cur.right)
+			elem += 1
+
+		to_draw = list(reversed(to_draw))
+		while to_draw:
+			cur = to_draw.pop()
+			point, rad = self.data[cur.vantage], cur.mu
+
+			if not rad:					continue
+			if point[0] + rad > max_x:	max_x = point[0] + rad
+			if point[1] + rad > max_y:	max_y = point[1] + rad
+			if point[0] - rad < min_x:	min_x = point[0] - rad
+			if point[1] - rad < min_y:	min_y = point[1] - rad
+
+			width = default_linewidth*(decay**elem)
+			circ = plt.Circle(point, rad, 
+							  fill = False, edgecolor = "black", 
+							  clip_on = True, linewidth = width)
+			ax.add_artist(circ)
+			elem -= 1
+
+		plt.xlim(left = min_x, right=max_x)
+		plt.ylim(bottom = min_y, top = max_y)
+		plt.xlabel("X")
+		plt.ylabel("Y")
+		plt.title("VP-tree on {} elements".format(len(self.data)))
+		plt.savefig("vptree_{}elements.png".format(len(self.data)))
+		'''
 
 	def print_tree(self):
 		print("\n")
