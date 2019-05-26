@@ -1,6 +1,7 @@
 from statistics import median
 from queue import PriorityQueue
 import matplotlib.pyplot as plt
+import random
 
 '''
 --------------------
@@ -44,20 +45,18 @@ Likewise, let [vantage], the vantage point in the node, be defined as an index
 into [self.data].  
 '''
 class Node(object):
-	def __init__(self, indices, parent):
+	def __init__(self, indices):
 		self.indices = indices
-		self.parent = parent
 		self.vantage = None
 		self.mu = None
 		self.left = None
 		self.right = None
 
 class VPTree(object):
-	def __init__(self, data, distfunc, vpfunc):
+	def __init__(self, data, distfunc, vpfunc = random.choice):
 		self.data = data
 		self.root = Node(
 				indices = list(range(len(self.data))), 
-				parent = None
 			)
 		self.distfunc = distfunc
 		self.vpfunc = vpfunc
@@ -77,51 +76,12 @@ class VPTree(object):
 		right = list(set(node.indices) - set(left))
 
 		if left:
-			node.left = Node(indices = left, parent = node)
+			node.left = Node(indices = left)
 			self._construct_tree(node.left)
 
 		if right:
-			node.right = Node(indices = right, parent = node)
+			node.right = Node(indices = right)
 			self._construct_tree(node.right)
-
-	'''
-	def draw_tree(self, default_linewidth = 2, decay = 0.9):
-		assert len(self.data[0]) == 2
-		min_x, max_x, min_y, max_y = 0, 0, 0, 0
-		fig, ax = plt.subplots()
-		to_draw = [self.root]
-		elem = 0
-		while elem < len(self.data):
-			cur = to_draw[elem]
-			if cur.left:	to_draw.append(cur.left)
-			if cur.right:	to_draw.append(cur.right)
-			elem += 1
-
-		to_draw = list(reversed(to_draw))
-		while to_draw:
-			cur = to_draw.pop()
-			point, rad = self.data[cur.vantage], cur.mu
-
-			if not rad:					continue
-			if point[0] + rad > max_x:	max_x = point[0] + rad
-			if point[1] + rad > max_y:	max_y = point[1] + rad
-			if point[0] - rad < min_x:	min_x = point[0] - rad
-			if point[1] - rad < min_y:	min_y = point[1] - rad
-
-			width = default_linewidth*(decay**elem)
-			circ = plt.Circle(point, rad, 
-							  fill = False, edgecolor = "black", 
-							  clip_on = True, linewidth = width)
-			ax.add_artist(circ)
-			elem -= 1
-
-		plt.xlim(left = min_x, right=max_x)
-		plt.ylim(bottom = min_y, top = max_y)
-		plt.xlabel("X")
-		plt.ylabel("Y")
-		plt.title("VP-tree on {} elements".format(len(self.data)))
-		plt.savefig("vptree_{}elements.png".format(len(self.data)))
-		'''
 
 	def print_tree(self):
 		print("\n")
@@ -170,3 +130,42 @@ class VPTree(object):
 					if nvis:	nvis[0] += 1
 
 		return self.data[nn.vantage]
+
+	'''
+	Performs an "approximate" nearest-neighbor search following a root->leaf 
+	path down the tree, returning the leaf node as the nearest neighbor. 
+	'''
+	def fast_approx_query(self, q, nvis = False):
+		assert(nvis == [1] or nvis is False)
+		cur = self.root
+		closest = None
+		while cur:
+			closest = cur
+			d = self.distfunc(q, self.data[cur.vantage])
+
+			if d < cur.mu:
+				cur = cur.left
+				if nvis:	nvis[0] += 1
+
+			else: # d >= cur.mu
+				cur = cur.right
+				if nvis:	nvis[0] += 1
+
+		return self.data[closest.vantage]
+
+class VPForest(object):
+	def __init__(self, data, n_estimators, distfunc, vpfunc = random.choice):
+		self.distfunc = distfunc
+		self.estimators = [VPTree(data, distfunc, vpfunc) for i in range(n_estimators)]
+
+	def query(self, q, n_trees, n_vis = False):
+		guesses = []
+		for i in range(n_trees):
+			count = [1] if n_vis else False
+			guess = self.estimators[i].fast_approx_query(q, count)
+			if n_vis:	n_vis[0] += count
+			guesses.append(guess)
+
+		dists = [self.distfunc(guess, q) for guess in guesses]
+		__, closest = sorted(zip(dists, guess))[0]
+		return closest

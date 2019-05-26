@@ -6,52 +6,42 @@ import matplotlib.pyplot as plt
 random.seed(166)
 np.random.seed(166)
 
-def vptest_ints(nsamples = 1000, dim = 3, nqueries = 100, \
-		lb = 0, ub = 100, verbose = False):
-	data = [np.random.randint(lb, ub, dim) for i in range(nsamples)]
-	tree = VPTree(
-			data = data, 
-			distfunc = lambda a, b : np.linalg.norm(a-b), 
-			vpfunc = random.choice
-		)
-	baseline = LinearScan(
-			data = data, 
-			distfunc = lambda a, b : np.linalg.norm(a-b)
-		)
+class TestHarness(object):
+	def __init__(self, data, scan_params, tree_params, forest_params):
+		scan_params["data"] = data
+		tree_params["data"] = data
+		forest_params["data"] = data
+		self.estimators = [LinearScan(**scan_params), \
+			VPTree(**tree_params), 
+			VPForest(**forest_params)]
+		self.n = len(data)
 
-	if verbose:	tree.print_tree()
+	def test(queries):
+		n_queries = len(queries)
+		results = {}
+		times = []
+		for q in queries:
+			tic = time.time()
+			self.estimators[0].query(q)
+			toc = time.time() - tic
+			times.append(toc)
+		results["LinearScan"] = times
 
-	vp_qtimes, baseline_qtimes = [], []
-	vp_visits = []
-	for test in range(nqueries):
-		q = np.random.randint(lb, ub, dim)
+		for est in self.estimators[1:]:
+			times = []
+			name = est.__name__
+			for q in queries:
+				ct = [1]
+				tic = time.time()
+				est.query(q, ct)
+				toc = time.time() - tic
+				times.append((toc, ct[0]))
+			results[name] = times
 
-		tic = time.time()
-		nvis = [1]
-		vp_soln = tree.query(q, nvis = nvis)
-		toc = time.time()
-		vp_qtimes.append(toc - tic)
-		vp_visits.append(nvis)
+		return results
 
-		tic = time.time()
-		baseline_soln = baseline.query(q)
-		toc = time.time()
-		baseline_qtimes.append(toc - tic)
-
-		vp_dist = np.linalg.norm(vp_soln - q)
-		baseline_dist = np.linalg.norm(baseline_soln - q)
-		err = "Query {}".format(test) + ": " + str(q)
-		err += "\nVP solution " + str(vp_soln) + " at distance {:f}".format(vp_dist) + "\n"
-		err += "Scan solution " + str(baseline_soln) + " at distance {:f}".format(baseline_dist)
-		assert vp_dist == baseline_dist, err
-
-	vp_avgtime, baseline_avgtime = np.average(vp_qtimes), np.average(baseline_qtimes)
-	vp_avgqueries = np.average(vp_visits)
-	print("Passed all tests!")
-	print("Mean query time for VP: {:f}".format(vp_avgtime))
-	print("Mean query time for baseline: {:f}".format(baseline_avgtime))
-	print("Mean queries for VP: {:.2f} (vs. log(n) = {:.2f})".format(vp_avgqueries, np.log2(nsamples)))
-	return vp_avgtime, baseline_avgtime, vp_avgqueries
+	def plot_and_summarize(results):
+		
 
 if __name__ == "__main__":
 	npoints = 50
