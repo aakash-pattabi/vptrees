@@ -49,9 +49,11 @@ class Test(object):
 			for q in queries:
 				ct = [1]
 				tic = time.time()
-				self.estimators[2].query(q, n_trees, ct)
+				result = self.estimators[2].query(q, n_trees, ct)
 				toc = time.time() - tic
-				times.append((toc, ct[0]))
+				error = self.estimators[0].get_rank_of(q, result)
+				times.append((toc, ct[0], error))
+
 			times_by_tree[n_trees] = times
 		results["VPForest"] = times_by_tree
 
@@ -73,6 +75,12 @@ class Test(object):
 		for n_trees in results["VPForest"].keys():
 			summary["VPForest-Time-" + str(n_trees)] = np.mean([el[0] for el in results["VPForest"][n_trees]])
 			summary["VPForest-Hits-" + str(n_trees)] = np.mean([el[1] for el in results["VPForest"][n_trees]])
+			summary["VPForest-Error-" + str(n_trees)] = {
+				"min" :		np.min([el[2] for el in results["VPForest"][n_trees]]), 
+				"mean" : 	np.mean([el[2] for el in results["VPForest"][n_trees]]),
+				"median" : 	np.median([el[2] for el in results["VPForest"][n_trees]]), 
+				"max" : 	np.max([el[2] for el in results["VPForest"][n_trees]])
+			}
 
 		return summary
 

@@ -29,9 +29,9 @@ class LinearScan(object):
 		return min_so_far
 
 	def get_rank_of(self, q, v):
-		dists = [self.distfunc(q, x) for x in self.data]
-		ranked = [x for __,x in sorted(zip(dists, self.data))]
-		return ranked.index(v)
+		assert v in self.data
+		dists = sorted([self.distfunc(q, x) for x in self.data])
+		return dists.index(self.distfunc(q, v))
 
 '''
 --------------------
