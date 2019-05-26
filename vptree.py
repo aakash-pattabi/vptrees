@@ -2,6 +2,7 @@ from statistics import median
 from queue import PriorityQueue
 import matplotlib.pyplot as plt
 import random
+import math
 
 '''
 --------------------
@@ -56,7 +57,7 @@ class VPTree(object):
 	def __init__(self, data, distfunc, vpfunc = random.choice):
 		self.data = data
 		self.root = Node(
-				indices = list(range(len(self.data))), 
+				indices = list(range(len(self.data)))
 			)
 		self.distfunc = distfunc
 		self.vpfunc = vpfunc
@@ -156,7 +157,9 @@ class VPTree(object):
 class VPForest(object):
 	def __init__(self, data, n_estimators, distfunc, vpfunc = random.choice):
 		self.distfunc = distfunc
-		self.estimators = [VPTree(data, distfunc, vpfunc) for i in range(n_estimators)]
+		if n_estimators is None:	n_estimators = len(data)/math.log(len(data))
+		self.n_estimators = n_estimators
+		self.estimators = [VPTree(data, distfunc, vpfunc) for i in range(self.n_estimators)]
 
 	def query(self, q, n_trees, n_vis = False):
 		guesses = []

@@ -6,19 +6,23 @@ import matplotlib.pyplot as plt
 random.seed(166)
 np.random.seed(166)
 
-class TestHarness(object):
+class Test(object):
 	def __init__(self, data, scan_params, tree_params, forest_params):
 		scan_params["data"] = data
 		tree_params["data"] = data
 		forest_params["data"] = data
-		self.estimators = [LinearScan(**scan_params), \
+		self.estimators = [
+			LinearScan(**scan_params),
 			VPTree(**tree_params), 
-			VPForest(**forest_params)]
+			VPForest(**forest_params)
+		]
 		self.n = len(data)
 
 	def test(queries):
+		assert queries
 		n_queries = len(queries)
 		results = {}
+
 		times = []
 		for q in queries:
 			tic = time.time()
@@ -27,69 +31,100 @@ class TestHarness(object):
 			times.append(toc)
 		results["LinearScan"] = times
 
-		for est in self.estimators[1:]:
+		times = []
+		for q in queries:
+			ct = [1]
+			tic = time.time()
+			self.estimators[1].query(q, ct)
+			toc = time.time() - tic
+			times.append((toc, ct[0]))
+		results["VPTree"] = times
+
+		trees_to_query = np.linspace(1, self.n, self.n**0.8).astype(int)
+		times_by_tree = {}
+		for n_trees in trees_to_query:
 			times = []
-			name = est.__name__
 			for q in queries:
 				ct = [1]
 				tic = time.time()
-				est.query(q, ct)
+				self.estimators[1].query(q, n_trees, ct)
 				toc = time.time() - tic
 				times.append((toc, ct[0]))
-			results[name] = times
+			times_by_tree[n_trees] = times
+		results["VPTree"] = times_by_tree
 
+		results = self._sanitize(results)
 		return results
 
-	def plot_and_summarize(results):
-		
+	def _sanitize(results):
+		sanitized = {}
+		for est in results:
+			times = results[est]
+			n_vis = (len(times[0]) > 1)
+			if not n_vis:	
+				sanitized[est] = np.mean(times)
+			else:
+				sanitized[est] = (np.mean([el[0] for el in times]), \
+								  np.mean([el[1] for el in times]))
+
+		sanitized["n"] = self.n
+		return sanitized
+
+class TestHarness(object):
+	def __init__(self, data_sequence, scan_params, tree_params, forest_params, save_name):
+		self.n_tests = len(data_sequence)
+		self.tests = [Test(
+				data_sequence[i], 
+				scan_params, 
+				tree_params, 
+				forest_params
+			) for i in range(self.n_tests)]
+		self.save_name = save_name
+		self.results = None
+
+	def test(self, query_sequence):
+		assert len(query_sequence) == self.n_tests
+		results = [self.tests[i].test(query_sequence[i]) for i in range(self.n_tests)]
+		self.results = self._concat_results(results)
+		return self.results
+
+	def _concat_results(results):
+		concat = [[res["n"], res["LinearScan"]] + list(res["VPTree"]) + list(res["VPForest"]) for res in results]
+		return np.array(concat)
+
+	def plot(self):
+		assert self.results
+		headers = ["n", "LinearScan-Time", "VPTree-Time", "VPTree-Hits", "VPForest-Time", "VPForest-Hits"]
+
+		plt.clf()
+		plt.plot(self.results[0], self.results[1], color = "blue", label = headers[1])
+		plt.plot(self.results[0], self.results[2], color = "red", label = headers[3])
+		plt.plot(self.results[0], self.results[4], color = "green", label = headers[4])
+		plt.legend(loc = "lower right")
+		plt.xlabel("n (# of samples)")
+		plt.ylabel("Avg. query time (s)")
+		plt.savefig(self.save_name + "_time.png")
+
+		plt.clf()
+		plt.plot(self.results[0], self.results[3], color = "red", label = headers[3])
+		plt.plot(self.results[0], self.results[5], color = "green", label = headers[5])
+		plt.legend(loc = "lower right")
+		plt.xlabel("n (# of samples)")
+		plt.ylabel("Avg. hits per query")
+		plt.savefig(self.save_name + "_hits.png")
+
 
 if __name__ == "__main__":
-	npoints = 50
-	samps = 10**np.linspace(1, 4, npoints).astype(int)
-	dims = [2, 5, 10, 50, 100, 1000]
+	df = lambda a, b : np.linalg.norm(a-b)
+	scan_params = {
+		"distfunc" = df
+	}
+	tree_params = {
+		"distfunc" = df
+	}
+	forest_params = {
+		"distfunc" = df, 
+		n_estimators = None		# By default, grow n/log(n) estimators --> global O(n) query time
+	}
 
-	# Battery of tests over various database sizes
-	samp_tests = np.zeros((npoints, 3))
-	i = 0
-	for samp in samps:
-		vp_avgtime, baseline_avgtime, vp_avgqueries = vptest_ints(
-				nsamples = samp
-			)
-		samp_tests[i,:] = np.array([vp_avgtime, baseline_avgtime, vp_avgqueries])
-		i += 1
 
-	plt.plot(samps, samp_tests[:,0], color = "blue", label = "VP-tree")
-	plt.plot(samps, samp_tests[:,1], color = "red", label = "Lin. scan")
-	plt.legend(loc = "lower right")
-	plt.title("VP-tree vs. linear scan as n increases")
-	plt.xlabel("n (# of samples)")
-	plt.xlabel("Avg. query time (s) (100 queries)")
-	plt.savefig("./output/querytime_n.png")
-	plt.clf()
-
-	plt.plot(samps, samp_tests[:,2], color = "blue", label = "VP-tree")
-	plt.plot(samps, np.log2(samps), color = "red", label = "Lg(n) target")
-	plt.legend(loc = "lower right")
-	plt.title("VP-tree queries vs. optimal ZPS target")
-	plt.xlabel("n (# of samples)")
-	plt.xlabel("Avg. node visits per query (100 queries)")
-	plt.savefig("./output/querytime_visits.png")
-	plt.clf()
-
-	# Battery of tests over various data dimensionalities
-	dim_tests = np.zeros((len(dims), 2))
-	i = 0	
-	for dim in dims:
-		vp_avgtime, baseline_avgtime, __ = vptest_ints(
-				dim = dim
-			)
-		dim_tests[i,:] = np.array([vp_avgtime, baseline_avgtime])
-		i += 1
-
-	plt.plot(dims, dim_tests[:,0], color = "blue", label = "VP-tree")
-	plt.plot(dims, dim_tests[:,1], color = "red", label = "Lin. scan")
-	plt.legend(loc = "lower right")
-	plt.title("VP-tree vs. linear scan as d increases")
-	plt.xlabel("d (dimensionality of sample)")
-	plt.xlabel("Avg. query time (s) (100 queries)")
-	plt.savefig("./output/querytime_d.png")
