@@ -8,7 +8,7 @@ random.seed(166)
 np.random.seed(166)
 
 class Test(object):
-	def __init__(self, data, scan_params, tree_params, forest_params):
+	def __init__(self, data, scan_params, tree_params, forest_params, save_name = None):
 		scan_params["data"] = data
 		tree_params["data"] = data
 		forest_params["data"] = data
@@ -18,6 +18,7 @@ class Test(object):
 			VPForest(**forest_params)
 		]
 		self.n = len(data)
+		self.save_name = save_name
 
 	def test(self, queries):
 		assert queries
@@ -42,7 +43,7 @@ class Test(object):
 		results["VPTree"] = times
 
 		total_trees = self.estimators[2].n_estimators
-		trees_to_query = np.linspace(1, total_trees, total_trees**0.8).astype(int)
+		trees_to_query = np.unique(np.linspace(1, total_trees, total_trees**0.8).astype(int))
 		times_by_tree = {}
 		for n_trees in trees_to_query:
 			times = []
@@ -53,7 +54,6 @@ class Test(object):
 				toc = time.time() - tic
 				error = self.estimators[0].get_rank_of(q, result)
 				times.append((toc, ct[0], error))
-
 			times_by_tree[n_trees] = times
 		results["VPForest"] = times_by_tree
 
@@ -81,8 +81,53 @@ class Test(object):
 				"median" : 	np.median([el[2] for el in results["VPForest"][n_trees]]), 
 				"max" : 	np.max([el[2] for el in results["VPForest"][n_trees]])
 			}
-
 		return summary
+
+	def plot_results(self, results):
+		assert self.save_name
+
+		keys = [k for k in results.keys() if "VPForest" in k]		
+		n_trees = [int(k[-1]) for k in keys if "Time-" in k]
+
+		times = [k for __, k in sorted(zip(n_trees, [results[k] for k in keys if "Time-" in k]))]
+		hits = [k for __, k in sorted(zip(n_trees, [results[k] for k in keys if "Hits-" in k]))]
+		error_mins = [k for __, k in sorted(zip(n_trees, [results[k]["min"] for k in keys if "Error-" in k]))]
+		error_meds = [k for __, k in sorted(zip(n_trees, [results[k]["median"] for k in keys if "Error-" in k]))]
+		error_maxs = [k for __, k in sorted(zip(n_trees, [results[k]["max"] for k in keys if "Error-" in k]))]
+		n_trees = sorted(n_trees)
+
+		plt.clf()
+		plt.plot(n_trees, times, color = "blue", label = "VPForest")
+		plt.axhline(results["VPTree-Time"], color = "green", label = "VPTree")
+		plt.axhline(results["LinearScan-Time"], color = "red", label = "LinearScan")
+		plt.xlabel("# of trees in forest")
+		plt.ylabel("Mean query time (s)")
+		plt.legend(loc = "lower right")
+		plt.title("VPForest avg. query time by # trees: " + str(self.n) + " points")
+		plt.tight_layout()
+		plt.savefig(self.save_name + "_time.png")
+
+		plt.clf()
+		plt.plot(n_trees, hits, color = "blue", label = "VPForest")
+		plt.axhline(results["VPTree-Hits"], color = "green", label = "VPTree")
+		plt.axhline(self.n, color = "red", label = "LinearScan")
+		plt.xlabel("# of trees in forest")
+		plt.ylabel("Mean search hits")
+		plt.legend(loc = "lower right")
+		plt.title("VPForest avg. search hits by # trees: " + str(self.n) + " points")
+		plt.tight_layout()
+		plt.savefig(self.save_name + "_hits.png")
+
+		plt.clf()
+		plt.plot(n_trees, error_mins, color = "blue", label = "Best query error")
+		plt.plot(n_trees, error_meds, color = "green", label = "Median query error")
+		plt.plot(n_trees, error_maxs, color = "red", label = "Worst query error")
+		plt.xlabel("# of trees in forest")
+		plt.ylabel("Rank error (0 is best)")
+		plt.legend(loc = "upper right")
+		plt.title("VPForest rank error over all queries by # trees: " + str(self.n) + " points")
+		plt.tight_layout()
+		plt.savefig(self.save_name + "_error.png")
 
 class TestHarness(object):
 	def __init__(self, data_sequence, scan_params, tree_params, forest_params, save_name):
@@ -98,29 +143,14 @@ class TestHarness(object):
 
 	def test(self, query_sequence):
 		assert len(query_sequence) == self.n_tests
-		results = [self.tests[i].test(query_sequence[i]) for i in range(self.n_tests)]
+		self.results = [self.tests[i].test(query_sequence[i]) for i in range(self.n_tests)]
+		self.save()
 		return self.results
 
-	def plot(self):
+	def _save(self):
 		assert self.results
-		headers = ["n", "LinearScan-Time", "VPTree-Time", "VPTree-Hits", "VPForest-Time", "VPForest-Hits"]
-
-		plt.clf()
-		plt.plot(self.results[0], self.results[1], color = "blue", label = headers[1])
-		plt.plot(self.results[0], self.results[2], color = "red", label = headers[3])
-		plt.plot(self.results[0], self.results[4], color = "green", label = headers[4])
-		plt.legend(loc = "lower right")
-		plt.xlabel("n (# of samples)")
-		plt.ylabel("Avg. query time (s)")
-		plt.savefig(self.save_name + "_time.png")
-
-		plt.clf()
-		plt.plot(self.results[0], self.results[3], color = "red", label = headers[3])
-		plt.plot(self.results[0], self.results[5], color = "green", label = headers[5])
-		plt.legend(loc = "lower right")
-		plt.xlabel("n (# of samples)")
-		plt.ylabel("Avg. hits per query")
-		plt.savefig(self.save_name + "_hits.png")
+		with open(self.save_name + "_results.pkl", "wb") as f:
+			pickle.dump(self.results, f)
 
 if __name__ == "__main__":
 	df = lambda a, b : np.linalg.norm(a-b)
@@ -135,8 +165,11 @@ if __name__ == "__main__":
 		"n_estimators" : None		# By default, grow n/log(n) estimators ==> global O(n) query time
 	}
 
-	data = np.random.rand(1000, 2)
-	q = np.random.rand(2)
-	t = Test(data, scan_params, tree_params, forest_params)
-	results = t.test([q])
-	print(results)
+	d = 2
+	n = 1000
+	n_queries = 50
+	data = np.random.rand(n, d)
+	q = [np.random.rand(d) for i in range(n_queries)]
+	t = Test(data, scan_params, tree_params, forest_params, save_name = "output/{}x{}_Euclidean".format(n, d))
+	results = t.test(q)
+	t.plot_results(results)

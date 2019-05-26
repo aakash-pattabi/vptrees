@@ -159,7 +159,7 @@ class VPTree(object):
 class VPForest(object):
 	def __init__(self, data, distfunc, vpfunc = random.choice, n_estimators = None):
 		self.distfunc = distfunc
-		if n_estimators is None:	n_estimators = int(len(data)/math.log(len(data)))
+		if n_estimators is None:	n_estimators = int(len(data)/math.log2(len(data)))
 		self.n_estimators = n_estimators
 		self.estimators = [VPTree(data, distfunc, vpfunc) for i in range(self.n_estimators)]
 
