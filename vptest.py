@@ -4,6 +4,7 @@ import random
 import time
 import matplotlib.pyplot as plt
 import pickle
+import re
 random.seed(166)
 np.random.seed(166)
 
@@ -87,7 +88,7 @@ class Test(object):
 		assert self.save_name
 
 		keys = [k for k in results.keys() if "VPForest" in k]		
-		n_trees = [int(k[-1]) for k in keys if "Time-" in k]
+		n_trees = [int(re.search(r"\d+", k).group()) for k in keys if "Time-" in k]
 
 		times = [k for __, k in sorted(zip(n_trees, [results[k] for k in keys if "Time-" in k]))]
 		hits = [k for __, k in sorted(zip(n_trees, [results[k] for k in keys if "Hits-" in k]))]
@@ -165,7 +166,7 @@ if __name__ == "__main__":
 		"n_estimators" : None		# By default, grow n/log(n) estimators ==> global O(n) query time
 	}
 
-	d = 2
+	d = 50
 	n = 1000
 	n_queries = 50
 	data = np.random.rand(n, d)
