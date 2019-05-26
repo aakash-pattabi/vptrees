@@ -144,31 +144,34 @@ class VPTree(object):
 			closest = cur
 			d = self.distfunc(q, self.data[cur.vantage])
 
-			if d < cur.mu:
-				cur = cur.left
-				if nvis:	nvis[0] += 1
+			if cur.mu:
+				if d < cur.mu:
+					cur = cur.left
+					if nvis:	nvis[0] += 1
 
-			else: # d >= cur.mu
-				cur = cur.right
-				if nvis:	nvis[0] += 1
+				else: # d >= cur.mu
+					cur = cur.right
+					if nvis:	nvis[0] += 1
+			else:				cur = None
 
 		return self.data[closest.vantage]
 
 class VPForest(object):
-	def __init__(self, data, n_estimators, distfunc, vpfunc = random.choice):
+	def __init__(self, data, distfunc, vpfunc = random.choice, n_estimators = None):
 		self.distfunc = distfunc
-		if n_estimators is None:	n_estimators = len(data)/math.log(len(data))
+		if n_estimators is None:	n_estimators = int(len(data)/math.log(len(data)))
 		self.n_estimators = n_estimators
 		self.estimators = [VPTree(data, distfunc, vpfunc) for i in range(self.n_estimators)]
 
 	def query(self, q, n_trees, n_vis = False):
+		assert n_trees <= self.n_estimators
 		guesses = []
 		for i in range(n_trees):
 			count = [1] if n_vis else False
 			guess = self.estimators[i].fast_approx_query(q, count)
-			if n_vis:	n_vis[0] += count
+			if n_vis:	n_vis[0] += count[0]
 			guesses.append(guess)
 
 		dists = [self.distfunc(guess, q) for guess in guesses]
-		__, closest = sorted(zip(dists, guess))[0]
-		return closest
+		__, i = sorted(zip(dists, range(n_trees)))[0]
+		return guesses[i]
