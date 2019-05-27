@@ -9,7 +9,8 @@ random.seed(166)
 np.random.seed(166)
 
 class Test(object):
-	def __init__(self, data, scan_params, tree_params, forest_params, save_name = None):
+	def __init__(self, data, scan_params, tree_params, forest_params, 
+				 save_name = None):
 		scan_params["data"] = data
 		tree_params["data"] = data
 		forest_params["data"] = data
@@ -169,8 +170,8 @@ if __name__ == "__main__":
 	}
 
 	d = 2
-	n = 10000
-	n_queries = 50
+	n = 500
+	n_queries = 25
 	data = np.random.rand(n, d)
 	q = [np.random.rand(d) for i in range(n_queries)]
 	t = Test(data, scan_params, tree_params, forest_params, save_name = "output/{}x{}_Euclidean".format(n, d))
