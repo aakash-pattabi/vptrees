@@ -5,7 +5,8 @@ import time
 import matplotlib.pyplot as plt
 import pickle
 import re
-import argparse
+import argparse, sys
+from progress.bar import Bar
 random.seed(166)
 np.random.seed(166)
 
@@ -15,6 +16,7 @@ class Test(object):
 		scan_params["data"] = data
 		tree_params["data"] = data
 		forest_params["data"] = data
+		print("Setting up data structures...")
 		self.estimators = [
 			LinearScan(**scan_params),
 			VPTree(**tree_params), 
@@ -28,14 +30,18 @@ class Test(object):
 		n_queries = len(queries)
 		results = {}
 
+		bar = Bar("LinearScan: Query hits", max = n_queries, fill = "=")
 		times = []
 		for q in queries:
 			tic = time.time()
 			self.estimators[0].query(q)
 			toc = time.time() - tic
 			times.append(toc)
+			bar.next()
 		results["LinearScan"] = times
+		bar.finish()
 
+		bar = Bar("VPTree: Query hits", max = n_queries, fill = "=")
 		times = []
 		for q in queries:
 			ct = [1]
@@ -43,10 +49,14 @@ class Test(object):
 			self.estimators[1].query(q, ct)
 			toc = time.time() - tic
 			times.append((toc, ct[0]))
+			bar.next()
 		results["VPTree"] = times
+		bar.finish()
 
 		total_trees = self.estimators[2].n_estimators
 		trees_to_query = np.unique(np.linspace(1, total_trees, total_trees**0.8).astype(int))
+		print("Hitting VPForest with {} queries, checking from {}-{} trees/query".format(n_queries, trees_to_query[0], trees_to_query[-1]))
+		bar = Bar("VPForest: Query hits (all #s of trees)", max = n_queries*len(trees_to_query), fill = "=")
 		times_by_tree = {}
 		for n_trees in trees_to_query:
 			times = []
@@ -57,8 +67,10 @@ class Test(object):
 				toc = time.time() - tic
 				error = self.estimators[0].get_rank_of(q, result)
 				times.append((toc, ct[0], error))
+				bar.next()
 			times_by_tree[n_trees] = times
 		results["VPForest"] = times_by_tree
+		bar.finish()
 
 		results = self._summarize(results)
 		return results
