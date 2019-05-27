@@ -119,10 +119,12 @@ class Test(object):
 		plt.tight_layout()
 		plt.savefig(self.save_name + "_hits.png")
 
+		all_succeed = n_trees[np.argmin(error_maxs)]
 		plt.clf()
 		plt.plot(n_trees, error_mins, color = "blue", label = "Best query error")
 		plt.plot(n_trees, error_meds, color = "green", label = "Median query error")
 		plt.plot(n_trees, error_maxs, color = "red", label = "Worst query error")
+		plt.axvline(all_succeed, color = "orange", linestyle = ":", label = "> {} trees => no error".format(all_succeed))
 		plt.xlabel("# of trees in forest")
 		plt.ylabel("Rank error (0 is best)")
 		plt.legend(loc = "upper right")
@@ -166,8 +168,8 @@ if __name__ == "__main__":
 		"n_estimators" : None		# By default, grow n/log(n) estimators ==> global O(n) query time
 	}
 
-	d = 50
-	n = 1000
+	d = 2
+	n = 10000
 	n_queries = 50
 	data = np.random.rand(n, d)
 	q = [np.random.rand(d) for i in range(n_queries)]
