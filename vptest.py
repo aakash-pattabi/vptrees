@@ -5,6 +5,7 @@ import time
 import matplotlib.pyplot as plt
 import pickle
 import re
+import argparse
 random.seed(166)
 np.random.seed(166)
 
@@ -97,11 +98,13 @@ class Test(object):
 		error_meds = [k for __, k in sorted(zip(n_trees, [results[k]["median"] for k in keys if "Error-" in k]))]
 		error_maxs = [k for __, k in sorted(zip(n_trees, [results[k]["max"] for k in keys if "Error-" in k]))]
 		n_trees = sorted(n_trees)
+		all_succeed = n_trees[np.argmin(error_maxs)]
 
 		plt.clf()
 		plt.plot(n_trees, times, color = "blue", label = "VPForest")
 		plt.axhline(results["VPTree-Time"], color = "green", label = "VPTree")
 		plt.axhline(results["LinearScan-Time"], color = "red", label = "LinearScan")
+		plt.axvline(all_succeed, color = "orange", linestyle = ":", label = "> {} trees => VPF is exact".format(all_succeed))
 		plt.xlabel("# of trees in forest")
 		plt.ylabel("Mean query time (s)")
 		plt.legend(loc = "lower right")
@@ -113,6 +116,7 @@ class Test(object):
 		plt.plot(n_trees, hits, color = "blue", label = "VPForest")
 		plt.axhline(results["VPTree-Hits"], color = "green", label = "VPTree")
 		plt.axhline(self.n, color = "red", label = "LinearScan")
+		plt.axvline(all_succeed, color = "orange", linestyle = ":", label = "> {} trees => VPF is exact".format(all_succeed))
 		plt.xlabel("# of trees in forest")
 		plt.ylabel("Mean search hits")
 		plt.legend(loc = "lower right")
@@ -125,7 +129,7 @@ class Test(object):
 		plt.plot(n_trees, error_mins, color = "blue", label = "Best query error")
 		plt.plot(n_trees, error_meds, color = "green", label = "Median query error")
 		plt.plot(n_trees, error_maxs, color = "red", label = "Worst query error")
-		plt.axvline(all_succeed, color = "orange", linestyle = ":", label = "> {} trees => no error".format(all_succeed))
+		plt.axvline(all_succeed, color = "orange", linestyle = ":", label = "> {} trees => VPF is exact".format(all_succeed))
 		plt.xlabel("# of trees in forest")
 		plt.ylabel("Rank error (0 is best)")
 		plt.legend(loc = "upper right")
@@ -169,11 +173,14 @@ if __name__ == "__main__":
 		"n_estimators" : None		# By default, grow n/log(n) estimators ==> global O(n) query time
 	}
 
-	d = 2
-	n = 500
-	n_queries = 25
-	data = np.random.rand(n, d)
-	q = [np.random.rand(d) for i in range(n_queries)]
-	t = Test(data, scan_params, tree_params, forest_params, save_name = "output/{}x{}_Euclidean".format(n, d))
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--n", type = int)
+	parser.add_argument("--d", type = int)
+	parser.add_argument("--n_queries", type = int)
+	args = parser.parse_args()
+
+	data = np.random.rand(args.n, args.d)
+	q = [np.random.rand(args.d) for i in range(args.n_queries)]
+	t = Test(data, scan_params, tree_params, forest_params, save_name = "output/{}x{}_Euclidean".format(args.n, args.d))
 	results = t.test(q)
 	t.plot_results(results)
