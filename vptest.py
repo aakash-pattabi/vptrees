@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 import pickle
 import re
 import argparse, sys
-from progress.bar import Bar
-random.seed(166)
+from progress.bar random.seed(166)
 np.random.seed(166)
 
 class Test(object):
