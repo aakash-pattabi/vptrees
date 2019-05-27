@@ -41,7 +41,7 @@ class Test(object):
 		results["LinearScan"] = times
 		bar.finish()
 
-		bar = Bar("VPTree: Query hits", max = n_queries, fill = "=")
+		bar = Bar("VPTree: Query hits" + 4*" ", max = n_queries, fill = "=")
 		times = []
 		for q in queries:
 			ct = [1]
@@ -55,8 +55,10 @@ class Test(object):
 
 		total_trees = self.estimators[2].n_estimators
 		trees_to_query = np.unique(np.linspace(1, total_trees, total_trees**0.8).astype(int))
-		print("Hitting VPForest with {} queries, checking from {}-{} trees/query".format(n_queries, trees_to_query[0], trees_to_query[-1]))
-		bar = Bar("VPForest: Query hits (all #s of trees)", max = n_queries*len(trees_to_query), fill = "=")
+		print("Testing {} #s of trees/query, checking from {}-{} trees/query".format(
+			len(trees_to_query), trees_to_query[0], trees_to_query[-1])
+		)
+		bar = Bar("VPForest: Query hits" + 2*" ", max = n_queries*len(trees_to_query), fill = "=")
 		times_by_tree = {}
 		for n_trees in trees_to_query:
 			times = []
