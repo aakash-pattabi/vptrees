@@ -188,9 +188,9 @@ if __name__ == "__main__":
 	}
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--n", type = int)
-	parser.add_argument("--d", type = int)
-	parser.add_argument("--n_queries", type = int)
+	parser.add_argument("--n", type = int, help = "number of data points to generate; currently from a uniform distribution U(0, 1)")
+	parser.add_argument("--d", type = int, help = "dimensionality of each data point, yielding an overall data matrix of shape (n, d)")
+	parser.add_argument("--n_queries", type = int, help = "number of queries to hit each data structure with; results are avg'd over all queries")
 	args = parser.parse_args()
 
 	data = np.random.rand(args.n, args.d)
