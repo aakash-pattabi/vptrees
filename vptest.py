@@ -24,7 +24,7 @@ class Test(object):
 		self.n = len(data)
 		self.save_name = save_name
 
-	def test(self, queries):
+	def test(self, queries, random_searching = False):
 		assert queries
 		n_queries = len(queries)
 		results = {}
@@ -64,7 +64,7 @@ class Test(object):
 			for q in queries:
 				ct = [1]
 				tic = time.time()
-				result = self.estimators[2].query(q, n_trees, ct)
+				result = self.estimators[2].query(q, n_trees, ct, random_searching)
 				toc = time.time() - tic
 				error = self.estimators[0].get_rank_of(q, result)
 				times.append((toc, ct[0], error))
@@ -176,12 +176,12 @@ class TestHarness(object):
 		self.save_name = save_name
 		self.results = None
 
-	def test(self, query_sequence):
+	def test(self, query_sequence, random_searching = False):
 		assert len(query_sequence) == self.n_tests
 		self.results = []
 		for i in range(self.n_tests):
 			print("\nRunning test [{}/{}]:".format(i+1, self.n_tests))
-			res = self.tests[i].test(query_sequence[i])
+			res = self.tests[i].test(query_sequence[i], random_searching)
 			self.results.append(res)
 		self._save()
 		return self.results
@@ -211,13 +211,16 @@ if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--n", nargs = "+", type = int, required = True, 
-		help = "Number of data points to generate for each test; currently from a uniform distribution U(0, 1)")
+		help = "Number of data points to generate for each test; currently from a uniform distribution U(0, 1).")
 
 	parser.add_argument("--d", nargs = "+", type = int, required = True, 
-		help = "Dimensionality of data points for each test, which will be over data of size (n_i, d_i) for (n, d) pair i")
+		help = "Dimensionality of data points for each test, which will be over data of size (n_i, d_i) for (n, d) pair i.")
 
 	parser.add_argument("--n_queries", nargs = "+", type = int, required = True, 
-		help = "Number of queries over which to summarize performance statistics; either one integer or one integer _per test_")
+		help = "Number of queries over which to summarize performance statistics; either one integer or one integer _per test_.")
+
+	parser.add_argument("--random_searching", default = False, action = "store_true", 
+		help = "Flag -- indicates whether or not to use diameter-proportioned random searching in VPForest approximate queries.")
 
 	args = parser.parse_args()
 	if len(args.d) != len(args.n):
@@ -232,6 +235,7 @@ if __name__ == "__main__":
 	shapes = zip(args.n, args.d)
 	queries = zip(args.d, args.n_queries)
 
+	random_searching_flag = "_RandomSearching" if args.random_searching else ""
 	data_sequence = [np.random.rand(*shape) for shape in shapes]
 	query_sequence = [[np.random.rand(d) for i in range(n_q)] for d, n_q in queries]
 
@@ -240,13 +244,7 @@ if __name__ == "__main__":
 			scan_params = scan_params, 
 			tree_params = tree_params, 
 			forest_params = forest_params, 
-			save_name = "output/Euclidean"
+			save_name = "output/Euclidean" + random_searching_flag
 		)
-	th.test(query_sequence)
+	th.test(query_sequence, args.random_searching)
 	th.plot_results()
-
-	# data = np.random.rand(args.n, args.d)
-	# q = [np.random.rand(args.d) for i in range(args.n_queries)]
-	# t = Test(data, scan_params, tree_params, forest_params, save_name = "output/{}x{}_Euclidean".format(args.n, args.d))
-	# results = t.test(q)
-	# t.plot_results(results)
