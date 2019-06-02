@@ -228,7 +228,7 @@ if __name__ == "__main__":
 	if args.random_vp:
 		vpfunc = lambda i, d: random.choice(i)
 	else:
-		vpfunc = lambda i, d: i[np.argsort(np.linalg.norm(d, axis = 1)[i])[-1]]
+		vpfunc = lambda i, d: i[np.argsort(np.linalg.norm(d - np.round(d), axis = 1)[i])[-1]]
 
 	scan_params = {
 		"distfunc" : df
