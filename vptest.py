@@ -226,7 +226,7 @@ if __name__ == "__main__":
 	df = lambda a, b : np.linalg.norm(a-b)
 
 	if args.random_vp:
-		vpfunc = random.choice
+		vpfunc = lambda i, d: random.choice(i)
 	else:
 		vpfunc = lambda i, d: i[np.argsort(np.linalg.norm(d, axis = 1)[i])[-1]]
 
