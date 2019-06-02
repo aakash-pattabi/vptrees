@@ -210,7 +210,7 @@ if __name__ == "__main__":
 	parser.add_argument("--random_searching", default = False, action = "store_true", 
 		help = "Flag -- indicates whether or not to use diameter-proportioned random searching in VPForest approximate queries.")
 
-	parser.add_argument("--random_vp", default = False,
+	parser.add_argument("--random_vp", default = False, action = "store_true",
 		help = "Flag -- indicates whether or not to use a random vantage point or choose one at the edge of space")
 
 	args = parser.parse_args()
