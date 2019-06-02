@@ -69,7 +69,7 @@ class VPTree(object):
 			node.vantage = node.indices[0]
 			return
 
-		node.vantage = self.vpfunc(node.indices)
+		node.vantage = self.vpfunc(node.indices, self.data)
 		node.indices.remove(node.vantage)
 		distances = [self.distfunc(self.data[node.vantage], self.data[i]) for i in node.indices]
 		node.mu = median(distances)

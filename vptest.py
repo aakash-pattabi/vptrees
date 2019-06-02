@@ -197,18 +197,6 @@ class TestHarness(object):
 			pickle.dump(self.results, f)
 
 if __name__ == "__main__":
-	df = lambda a, b : np.linalg.norm(a-b)
-	scan_params = {
-		"distfunc" : df
-	}
-	tree_params = {
-		"distfunc" : df
-	}
-	forest_params = {
-		"distfunc" : df, 
-		"n_estimators" : None		# By default, grow n/log(n) estimators ==> global O(n) query time
-	}
-
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--n", nargs = "+", type = int, required = True, 
 		help = "Number of data points to generate for each test; currently from a uniform distribution U(0, 1).")
@@ -222,6 +210,9 @@ if __name__ == "__main__":
 	parser.add_argument("--random_searching", default = False, action = "store_true", 
 		help = "Flag -- indicates whether or not to use diameter-proportioned random searching in VPForest approximate queries.")
 
+	parser.add_argument("--random_vp", default = False, action = "store_true",
+		help = "Flag -- indicates whether or not to use a random vantage point or choose one at the edge of space")
+
 	args = parser.parse_args()
 	if len(args.d) != len(args.n):
 		parser.error("The number of arguments passed to --n and --d must be the same! (Each data set has an (n, d) pair.)")
@@ -231,6 +222,26 @@ if __name__ == "__main__":
 
 	if len(args.n_queries) == 1:
 		args.n_queries *= len(args.n)
+
+	df = lambda a, b : np.linalg.norm(a-b)
+
+	if args.random_vp:
+		vpfunc = lambda i, d: random.choice(i)
+	else:
+		vpfunc = lambda i, d: i[np.argsort(np.linalg.norm(d - np.round(d), axis = 1)[i])[-1]]
+
+	scan_params = {
+		"distfunc" : df
+	}
+	tree_params = {
+		"distfunc" : df,
+		"vpfunc" : vpfunc
+	}
+	forest_params = {
+		"distfunc" : df, 
+		"n_estimators" : None,		# By default, grow n/log(n) estimators ==> global O(n) query time
+		"vpfunc" : vpfunc
+	}
 
 	shapes = zip(args.n, args.d)
 	queries = zip(args.d, args.n_queries)
