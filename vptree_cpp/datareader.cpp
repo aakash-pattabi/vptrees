@@ -35,7 +35,7 @@ DataReader::~DataReader() {
 	return; 
 }
 
-std::vector<std::vector<float> > DataReader::get_float_data() {
+std::vector<CoordPtr> DataReader::get_float_data() {
 	// Line stream input variables
 	std::ifstream data(this->file);  
 	std::string line = "";  
@@ -44,23 +44,34 @@ std::vector<std::vector<float> > DataReader::get_float_data() {
 	typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
 	boost::char_separator<char> sep{" ,"}; 
 
-	// Return data structure and size validation
-	std::vector<std::vector<float> > data_list;
-	std::size_t coord_size = -1;
+	// Get coordinate size for size validation
+	getline(data, line); 
+	tokenizer tok{line, sep}; 
+	std::size_t coord_size = 0; 
+	for (auto t = tok.begin(); t != tok.end(); t++) {
+		coord_size += 1; 
+	}
+	data.seekg(0, data.beg); 
 
-	while (getline(data, line)) { 
-		std::vector<float> coords; 
-		tokenizer tok{line, sep};	
+	// Instantiate return data structure
+	std::vector<CoordPtr> data_list;
+
+	while (getline(data, line)) {  
+		std::valarray<float> *init = new std::valarray<float>(coord_size); 
+		CoordPtr p(init); 
+
+		tokenizer tok{line, sep};
+		std::size_t tmp = 0;
 		for (auto &t : tok) {
 			float f = atof(t.c_str()); 
-			coords.push_back(f); 
+			p[tmp] = f; 
+			tmp += 1;
 		}
-
-		// Validate length of coordinate / # of entries to prevent malformed input 
-		// (tuples of differential sizes)
-		if (coord_size != -1)	assert(coords.size() == coord_size); 
-		else 					coord_size = coords.size(); 
-		data_list.push_back(coords); 
+		// Validate length of coordinate. Namely, make sure that exactly coord_size elements
+		// were in the token stream. ** Is it bad style to make this assertion also "handle" the case
+		// where there were _too many_ tokens, causing the array to overflow? Probably... **
+		assert(tmp == coord_size); 
+		data_list.push_back(std::move(p));  
 	} 
 	return (data_list); 
 }
@@ -73,11 +84,11 @@ std::vector<std::vector<float> > DataReader::get_float_data() {
  * 
  * @return n/a
  */
-void DataReader::print_float_data(std::vector<std::vector<float> > data) {
-	for (auto &tuple : data) {
-		for (auto &element : tuple) {
-			std::cout << std::to_string(element); 
-			if (&element != &tuple.back())	std::cout << ","; 
+void DataReader::print_float_data(std::vector<CoordPtr> &data) {
+	for (auto &ptr : data) {
+		for (std::size_t i = 0; i < ptr.size(); i++) {
+			std::cout << std::to_string(ptr[i]); 
+			if (i < ptr.size()-1)	std::cout << ","; 
 		}
 
 		std::cout << std::endl; 

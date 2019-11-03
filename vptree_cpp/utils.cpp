@@ -1,10 +1,7 @@
-#include <vector>
-#include <cfloat>
+#include "utils.h"
 #include <algorithm>
-#define BLOCK_SIZE 5
-#define MEDIAN -1
 
-// Want to find the median in worst-case linear time in a data structure 
+// We want to find the median in worst-case linear time in a data structure 
 // consisting of pairs of <float, int>. In this case, the <float> part of the 
 // pair is the distance between the vantage point ("pivot") in the data and the
 // given element, identified by the <int> which is an index into the data. 
@@ -24,12 +21,12 @@
  * 		index: The index for the order selection, e.g. |data.size()/2| if a median is 
  *			   desired. 
  */
-std::pair<float, int> select_median(std::vector<std::pair<float, int> > data, int index = MEDIAN) {
+std::pair<float, int> select_median(std::vector<std::pair<float, int> > data, int index) {
 	// Recursive base case
 	if (data.size() == 1)		return (data[0]); 
 
-	// If the base case is not satisfied, and a median is desired with no argument
-	// input, determine the position of the median element in a hypothetical sorted data vector
+	// If the base case is not satisfied, and a median is desired with no argument input, 
+	// determine the position of the median element in a hypothetical sorted data vector
 	if (index == MEDIAN)			index = (data.size() % 2 == 0) ? (data.size()/2)-1 : data.size()/2; 
 
 	// 1. Divide the data into groups of 5 (and a remainder)

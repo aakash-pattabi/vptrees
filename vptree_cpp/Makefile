@@ -1,22 +1,14 @@
-CC = g++
-CFLAGS = --std=c++11 -Wall -g
+CXX = g++
+CPPFLAGS = --std=c++17
+CXXFLAGS = -Wall -g
+OBJS = utils.o datareader.o vptest.o
 TARGET = vptest
-DEP = vptree
-DATA = datareader
-UTIL = utils
 
-$(TARGET): $(TARGET).o $(DEP).o $(DATA).o
-	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).o $(DEP).o $(DATA).o
+$(TARGET) : $(OBJS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $(TARGET) $(OBJS)
 
-$(TARGET).o: $(TARGET).cpp $(DEP).h 
-	$(CC) $(CFLAGS) -c $(TARGET).cpp
-
-$(DEP).o: $(DEP).cpp $(UTIL).cpp
-	$(CC) $(CFLAGS) -c $(DEP).cpp $(UTIL).cpp
-
-$(DATA).o: $(DATA).cpp
-	$(CC) $(CFLAGS) -c $(DATA).cpp
+vptest.o: datareader.h utils.h
+datareader.o: utils.h
 
 clean:
 	$(RM) *.o $(TARGET)
-
