@@ -1,13 +1,16 @@
-// #include "vptree.h"
+#include "vptree.h"
 #include "datareader.h"
 #include "utils.h"
-using namespace std; 
+#include <iostream>
 
-// Why is the first value saving as 0...? 
 int main() {
 	DataReader dr("data.csv", ","); 
 	std::vector<CoordPtr> data = dr.get_float_data(); 
 	dr.print_float_data(data); 
+	CoordPtr c = data[0]; 
+	CoordPtr p = data[1]; 
+	float f = c.distance_bw(p); 
+	std::cout << std::to_string(f) << std::endl; 
 
 	/*
 	std::vector<std::pair<float, int> > x_coords; 
