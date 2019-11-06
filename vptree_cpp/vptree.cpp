@@ -4,7 +4,7 @@
 #include <queue>
 #define LEAF -1
 
-VPTree::VPTree(std::vector<CoordPtr> data) {
+VPTree::VPTree(std::vector<CoordPtr> &data) {
 	this->root = this->construct_tree(data); 
 	return; 
 }
@@ -19,7 +19,7 @@ void VPTree::print_tree() {
 	return; 
 }
 
-VPTree::Node* VPTree::construct_tree(std::vector<CoordPtr> data) {
+VPTree::Node* VPTree::construct_tree(std::vector<CoordPtr> &data) {
 	// Recursive base case(s) -- the data vector only contains one element, which means this
 	// element will be encapsulated in a child node, as is
 	if (data.empty())					return nullptr; 
@@ -97,16 +97,13 @@ CoordPtr VPTree::query(const CoordPtr &target) const {
 void VPTree::print_node(Node* &node, int offset) const {
 	if (node == nullptr)		return; 
 
-	std::string indent("\t\t", offset); 
-	std::string vantage; std::string mu; std::string left; std::string right; 
-	vantage = indent + "Vantage: ("; 
-	size_t s = node->point.size(); 
-	for (int i = 0; i < s-1; i++) {
-		vantage += std::to_string(node->point[i]) + ", "; 
-	} 
-	vantage += std::to_string(node->point[s-1]) + ")"; 
-	mu = indent + "Mu: " + std::to_string(node->mu); 
-	std::cout << vantage << std::endl; 
+	std::string indent(offset, '\t'); 
+	std::string vantage; std::string mu; std::string left; std::string right;
+
+	vantage = indent + "Vantage: ";  
+	std::cout << vantage << node->point << std::endl;
+
+	mu = indent + "Mu: " + std::to_string(node->mu);
 	std::cout << mu << std::endl; 
 
 	left = indent + "Left ->";

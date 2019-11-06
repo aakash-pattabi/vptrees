@@ -86,11 +86,6 @@ std::vector<CoordPtr> DataReader::get_float_data() {
  */
 void DataReader::print_float_data(std::vector<CoordPtr> &data) {
 	for (auto &ptr : data) {
-		for (std::size_t i = 0; i < ptr.size(); i++) {
-			std::cout << std::to_string(ptr[i]); 
-			if (i < ptr.size()-1)	std::cout << ","; 
-		}
-
-		std::cout << std::endl; 
+		std::cout << ptr << std::endl;  
 	}
 }

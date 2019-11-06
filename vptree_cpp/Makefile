@@ -1,6 +1,6 @@
 CXX = g++
 CPPFLAGS = --std=c++17
-CXXFLAGS = -Wall -g
+CXXFLAGS = -Wall -g -O0
 OBJS = vptest.o datareader.o utils.o vptree.o
 TARGET = vptest
 

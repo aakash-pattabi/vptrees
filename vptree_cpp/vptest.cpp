@@ -7,10 +7,22 @@ int main() {
 	DataReader dr("data.csv", ","); 
 	std::vector<CoordPtr> data = dr.get_float_data(); 
 	dr.print_float_data(data); 
+
 	CoordPtr c = data[0]; 
 	CoordPtr p = data[1]; 
-	float f = c.distance_bw(p); 
-	std::cout << std::to_string(f) << std::endl; 
+
+	std::size_t i = 0; 
+	for (auto ptr : data) {
+		std::string status = (ptr.get_p() == nullptr ? "Null" : "Not null"); 
+		std::cout << std::to_string(i) + ": " << status << std::endl; 
+		i++; 
+	}
+
+	// float f = c.distance_bw(p); 
+	// std::cout << std::to_string(f) << std::endl; 
+
+	VPTree vp = VPTree(data); 
+	vp.print_tree(); 
 
 	/*
 	std::vector<std::pair<float, int> > x_coords; 
