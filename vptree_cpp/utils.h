@@ -6,7 +6,8 @@
 #include <valarray>
 #include <memory>
 #include <iostream>
-#define BLOCK_SIZE 5
+#include <algorithm>
+#include <chrono>
 #define MEDIAN -1
 
 /* 
@@ -33,14 +34,9 @@ class CoordPtr {
 			p = c.p; 
 		}
 
-		// Assignment operator
-		CoordPtr operator= (const CoordPtr& c) {
-			if (&c == this) {
-				return *this; 
-			}
-
-			p.reset(); 
-			p = c.p;  
+		// Copy assignment operator
+		CoordPtr operator= (CoordPtr c) {
+			std::swap(p, c.p); 
 			return *this; 
 		}
 
@@ -84,9 +80,37 @@ class CoordPtr {
 		Ptr p; 
 }; 
 
+/*
+ * Implementation of a simple timer class for performance profiling
+ */
+class Timer {
+	typedef std::chrono::high_resolution_clock Time; 
+	typedef std::chrono::microseconds Microseconds; 
+	public:
+		void start() {
+			timer_cycle_completed = false; 
+			t_start = Time::now(); 
+		}
+
+		void stop() {
+			t_stop = Time::now(); 
+			assert(!timer_cycle_completed); 
+			timer_cycle_completed = true;
+			ms = std::chrono::duration_cast<Microseconds>(t_stop - t_start); 
+			std::cout << ms.count(); 
+		}
+
+	private:
+		bool timer_cycle_completed = true; 
+		Microseconds ms; 
+		Time::time_point t_start; 
+		Time::time_point t_stop; 
+}; 
+
 /* 
  * [Some explanation here...]
  */
-std::pair<float, int> select_median(std::vector<std::pair<float, int> > data, int index = MEDIAN); 
+float select_median(std::vector<float> data, int index = MEDIAN);
+float hybrid_select_median(std::vector<float> data); 
 
 #endif

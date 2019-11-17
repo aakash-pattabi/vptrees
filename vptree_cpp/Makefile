@@ -1,15 +1,15 @@
 CXX = g++
 CPPFLAGS = --std=c++17
-CXXFLAGS = -Wall -g -O0
-OBJS = vptest.o datareader.o utils.o vptree.o
+CXXFLAGS = -Wall -g -Ofast
+OBJS = datareader.o utils.o vptree.o vptest.o
 TARGET = vptest
 
 $(TARGET) : $(OBJS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $(TARGET) $(OBJS)
 
-vptest.o: datareader.h utils.h vptree.h
-datareader.o: utils.h
+vptest.o: vptree.h utils.h datareader.h
 vptree.o: utils.h
+datareader.o: utils.h
 
 clean:
 	$(RM) *.o $(TARGET)

@@ -17,9 +17,8 @@
  * 
  * @return
  */
-DataReader::DataReader(std::string fileName, std::string delim) {
-	this->file = fileName; this->delimiter = delim; 
-	return; 
+DataReader::DataReader(std::string fileName, std::string delim) : file(fileName), delimiter(delim) 
+{ 
 }
 
 /*
@@ -71,7 +70,7 @@ std::vector<CoordPtr> DataReader::get_float_data() {
 		// were in the token stream. ** Is it bad style to make this assertion also "handle" the case
 		// where there were _too many_ tokens, causing the array to overflow? Probably... **
 		assert(tmp == coord_size); 
-		data_list.push_back(std::move(p));  
+		data_list.push_back(p);  
 	} 
 	return (data_list); 
 }

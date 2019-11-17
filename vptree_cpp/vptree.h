@@ -19,7 +19,7 @@ class VPTree {
 		}; 
 
 		// Constructor
-		VPTree(std::vector<CoordPtr> data); 
+		VPTree(std::vector<CoordPtr> &data); 
 
 		// Destructor
 		~VPTree(); 
@@ -35,7 +35,7 @@ class VPTree {
 		std::default_random_engine generator;
 
 		// Recursive procedure for constructing the main tree and its subtrees
-		Node* construct_tree(std::vector<CoordPtr> data); 
+		Node* construct_tree(std::vector<CoordPtr> &data); 
 
 		// Debugging
 		void print_node(Node* &node, int offset) const; 

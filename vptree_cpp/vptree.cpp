@@ -5,6 +5,7 @@
 #define LEAF -1
 
 VPTree::VPTree(std::vector<CoordPtr> &data) {
+	std::cout << "Starting to construct tree" << std::endl; 
 	this->root = this->construct_tree(data); 
 	return; 
 }
@@ -30,37 +31,50 @@ VPTree::Node* VPTree::construct_tree(std::vector<CoordPtr> &data) {
 		return node; 
 	} 			 
  
+	std::cout << "1" << std::endl;
+
  	// 1. Generate random "pivot" element that oversees the remaining data as a vantage
  	int n = data.size(); 
 	std::uniform_int_distribution<int> dist(0, n-1); 
 	int pivot = dist(this->generator); 
 	CoordPtr vantage = data[pivot]; 
 
+	std::cout << "2" << std::endl;
+
+	std::cout << "Pivot is: " + std::to_string(pivot) << std::endl; 
+	std::cout << "n is: " + std::to_string(n) << std::endl; 
+
 	// 2. Compute distances between all other data elements and the pivot (and keep track of indices)
-	std::vector<std::pair<float, int> > distances(n-1); 
+	std::vector<float> distances;
+	distances.reserve(n-1);  
 	for (int i = 0; i < n; i++) {
-		if (i < pivot) 					distances[i] = std::make_pair(vantage.distance_bw(data[i]), i); 
-		else if (i > pivot)				distances[i-1] = std::make_pair(vantage.distance_bw(data[i]), i); 
+		if (i != pivot) 	distances.push_back(vantage.distance_bw(data[i]));
 	}
+
+	std::cout << "3" << std::endl;
 
 	// 3. Sort in ascending order of distance between data elements and the vantage and take the median to 
 	// divide the data in half. Elements closer to the vantage point than the median distance go in the left
 	// subtree of the vantage point node, and elements further away go in the right subtree. 
-	// 
-	// TODO: Implement O(n) median selection algorithm to avoid using O(nlogn) sorting procedure
-	std::sort(distances.begin(), distances.end(), 
-		[](const std::pair<float, int> &a, const std::pair<float, int> &b) -> bool {
-		return (a.first < b.first); 
-	});
-	float mu = (distances[(n-1)/2]).first; 
+	float mu = hybrid_select_median(distances); 
+
+	// std::sort(distances.begin(), distances.end(), 
+	// 	[](const std::pair<float, int> &a, const std::pair<float, int> &b) -> bool {
+	// 	return (a.first < b.first); 
+	// });
+	// float mu = (distances[(n-1)/2]).first; 
+
+	std::cout << "3.5" << std::endl;
 
 	// 4. Partition datasets into left and right subtree sets
 	std::vector<CoordPtr> left; std::vector<CoordPtr> right;
 	left.reserve((n-2)/2); right.reserve((n-1)/2); 
 	for (int i = 0; i < distances.size(); i++) {
-		if (distances[i].first < mu)	left.push_back(std::move(data[distances[i].second])); 
-		else							right.push_back(std::move(data[distances[i].second])); 
+		if (i != pivot && distances[i] < mu)	left.push_back(data[i]); 
+		else if (i != pivot)					right.push_back(data[i]); 
 	}
+
+	std::cout << "4" << std::endl;
 
 	// 5. Construct the Node object and recursively construct the left and right subtrees
 	Node* node = new Node; 
